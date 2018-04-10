@@ -1,34 +1,49 @@
-let $ = require('jquery')  // jQuery now loaded and assigned to $
-const phantom = require('phantom');
-var spawn = require('child_process').spawn;
-var args = ["./phantom-script.js"];
-var options = {};
-var phantomExecutable = 'phantomjs';
+let axios = require('axios');
+let cheerio = require('cheerio');
+let $ = require('jquery')
+let fs = require('fs');
 
-function Uint8ArrToString(myUint8Arr){
-    return String.fromCharCode.apply(null, myUint8Arr);
-};
-
-$('#click-counter').text('')
 $('#countbtn').on('click', () => {
-    var text = ''
-    var child = spawn(phantomExecutable, args, options);
-    // Receive output of the child process
-child.stdout.on('data', function(data) {
-    var textData = Uint8ArrToString(data);
+    var text = `<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>ParSer</title>
+        <link rel = "stylesheet" 
+           href = "./bower_components/bootstrap/dist/css/bootstrap.min.css" />
+      </head>
+      <body>
+          <div class = "container">
+          <h1>The Result of the scraping</h1>`;
+    axios.get('https://www.list.am/category/56?gl=2').then((Response) => {
+        if (Response.status === 200) {
+            var html = Response.data;
+            let $ = cheerio.load(html);
 
-    text += textData;
-});
+            $('tbody tr').each(function (index, element) {
+                var header = $(element).find('div.t');
 
-// Receive error output of the child process
-child.stderr.on('data', function(err) {
-    var textErr = Uint8ArrToString(err);
-    console.log(textErr);
-});
+                var x = $(header).find('a').text();
+                //var href = $(header).find('a').getAttribute('href');
+                console.log("HHH ", href);
 
-// Triggered when the process closes
-child.on('close', function(code) {
-    $('#click-counter').text(text + '<br>' + 'Process closed with status code: ' + code);
-});
-  // $('#click-counter').text(count)
-}) 
+                if(x != null || x == " "){
+                    text += "<p><a href=\"\">" + x + "</a></p><br>";
+                }
+                
+
+            });
+            console.log("XXX ", text);
+            text += `        </div>
+            </body>
+          </html>`
+            fs.writeFileSync('ph.html', text);
+        }
+    }, (error) => {
+        console.log("Hmmmm: ", error)
+    });
+    console.log("SSS ", text);
+    //$('#click-counter').text(text);
+})
+
+
